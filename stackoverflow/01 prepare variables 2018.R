@@ -1,7 +1,6 @@
 source("init.R")
 
-zz=gzfile('data/input/StackOverflow/developer_survey_2018/survey_results_public.csv.gz','rt')   
-dataset_raw = read.csv(zz,header = T)
+dataset_raw = read_csv('data/input/StackOverflow/developer_survey_2018/survey_results_public.csv.gz')
 
 satisfaction_levels = c("Extremely dissatisfied",
                         "Moderately dissatisfied",
@@ -40,7 +39,7 @@ toNPS1_10 = function(x){
 }
 
 # tipos de datos
-dataset = dataset %>% 
+dataset = dataset_raw %>% 
   mutate(Hobby = Hobby == "Yes",
          OpenSource = OpenSource == "Yes",
          Male = recode(Gender,
@@ -48,8 +47,9 @@ dataset = dataset %>%
                        "Female" = F,
                        .default = NA),
          Dependents = Dependents == "Yes",
-         MilitaryUS = MilitaryUS == "Yes") %>%
-  mutate(JobSearchStatus = factor(JobSearchStatus, c('I am actively looking for a job',
+         MilitaryUS = MilitaryUS == "Yes")
+
+dataset = dataset %>% mutate(JobSearchStatus = factor(JobSearchStatus, c('I am actively looking for a job',
                                                      'I’m not actively looking, but I am open to new opportunities',
                                                      'I am not interested in new job opportunities'),
                                   ordered = T),
@@ -117,8 +117,9 @@ dataset = dataset %>%
                                       "Between 10:01 - 11:00 AM",
                                       "Between 11:01 AM - 12:00 PM",
                                       "After 12:01 PM",
-                                      "I work night shifts"),ordered = T)) %>% 
-  mutate(NumberMonitors = recode(NumberMonitors,"More than 4" = "5"),
+                                      "I work night shifts"),ordered = T))
+
+dataset = dataset %>% mutate(NumberMonitors = recode(NumberMonitors,"More than 4" = "5"),
          HoursOutside = recode(HoursOutside,
                                "Less than 30 minutes" = 0.5,
                                "30 - 59 minutes" = 1,
@@ -138,18 +139,20 @@ dataset = dataset %>%
                             "3 - 4 times per week" = 4,
                             "Daily or almost every day" = 7),
          Exercise = factor(Exercise, ordered = T)
-         ) %>% 
-  mutate_at(c("StackOverflowRecommend","StackOverflowJobsRecommend"),toNPS1_10) %>% 
-  mutate_at(vars(matches("Satisfaction$")),factor,satisfaction_levels,ordered = T) %>% 
-  mutate_at(vars(matches("^AgreeDisagree|^AdsAgreeDisagree")),factor,agree_levels,ordered = T) %>% 
-  mutate_at(vars(matches("^JobEmailPriorities|^AssessBenefits|^AssessJob|^AdsPriorities")),toNPS) %>% 
-  mutate_at(vars(starts_with("HypotheticalTools")),factor,c("Not at all interested",
+         )
+  
+dataset = dataset %>% mutate_at(c("StackOverflowRecommend","StackOverflowJobsRecommend"),toNPS1_10)
+dataset = dataset %>% mutate_at(vars(matches("Satisfaction$")),factor,satisfaction_levels,ordered = T)
+dataset = dataset %>% mutate_at(vars(matches("^AgreeDisagree|^AdsAgreeDisagree")),factor,agree_levels,ordered = T) 
+dataset = dataset %>% mutate_at(vars(matches("^JobEmailPriorities|^AssessBenefits|^AssessJob|^AdsPriorities")),toNPS) 
+dataset = dataset %>% mutate_at(vars(starts_with("HypotheticalTools")),factor,c("Not at all interested",
                                                             "Somewhat interested",
                                                             "A little bit interested",
                                                             "Very interested",
-                                                            "Extremely interested")) %>% 
-  mutate_at(c("YearsCoding","YearsCodingProf","HoursComputer","NumberMonitors","CompanySize","Age"),rangeToFactor) %>% 
-  mutate_at(multiple_opt,str_split,";")
+                                                            "Extremely interested"))
 
-saveRDS(dataset,"clean/01_categorisado.rds")
+dataset = dataset %>% mutate_at(c("YearsCoding","YearsCodingProf","HoursComputer","NumberMonitors","CompanySize","Age"),rangeToFactor)
+dataset = dataset %>% mutate_at(multiple_opt,str_split,";")
+
+saveRDS(dataset,"data/clean/01_categorisado.rds")
          

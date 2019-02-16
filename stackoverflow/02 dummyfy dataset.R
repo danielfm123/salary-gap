@@ -5,13 +5,14 @@ dataset = readRDS("data/clean/01_categorisado.rds")
 listsToDummy = function(x){
   # print(x)
   aux = map(x,function(y) {
-    y = str_remove_all(y,"[[:punct:]]")
+    y = str_remove_all(stry,"[[:punct:]]")
     make.names(y)
   })
   aux = map_dfr(aux,function(y){
     data.frame(matrix(1,ncol = length(y), nrow = 1,dimnames = list("1",y)) )
   })
   aux = map_dfc(aux,replace_na,0)
+  
   return(aux)
 }
 

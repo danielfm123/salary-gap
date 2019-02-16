@@ -12,15 +12,9 @@ if(version$os == "mingw32"){
 }
 
 librerias_a_cargar = c("tidyverse",
-                       "data.table",
-                       "purrr",
-                       "caret",
                        "future",
                        "R.utils",
-                       "h2o",
-                       "ranger",
-                       "rattle",
-                       "rpart")
+                       "readr")
 for(lib in librerias_a_cargar){
   # print(lib)
   if(!lib %in% rownames(installed.packages())){
