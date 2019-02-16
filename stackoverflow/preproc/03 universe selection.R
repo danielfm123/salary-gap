@@ -16,6 +16,7 @@ dataset = dataset %>%
   # select(-starts_with("AssessBenefits")) %>%
   # select(-starts_with("JobEmailPriorities")) %>%
   # select(-starts_with("AdsPriorities")) %>%
-  filter(ConvertedSalary < 200000 & ConvertedSalary > 50000)
+  filter(ConvertedSalary < 200000 & ConvertedSalary > 50000) %>% 
+  filter(!is.na(Male) )
 
 saveRDS(dataset,"data/clean/03_ready.rds")

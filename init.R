@@ -13,8 +13,9 @@ if(version$os == "mingw32"){
 
 librerias_a_cargar = c("tidyverse",
                        "future",
-                       "R.utils",
-                       "readr")
+                       "compiler",
+                       "readr",
+                       'caret')
 for(lib in librerias_a_cargar){
   # print(lib)
   if(!lib %in% rownames(installed.packages())){
@@ -46,7 +47,10 @@ multiple_opt = c("DevType",
                  "ErgonomicDevices",
                  "Gender",
                  "SexualOrientation",
-                 "RaceEthnicity")
+                 "RaceEthnicity",
+                 'AdsActions')
 
-sourceDirectory("functions")
+for (f in dir("functions",full.names = T,recursive = T)){
+  source(f)
+}
 
