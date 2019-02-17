@@ -1,0 +1,242 @@
+---
+title: "resumen gender_gap"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+# Setip del notebook
+if(!require("knitr")){
+  install.packages("knitr")
+  library(knitr)
+}
+if (!'.git' %in% dir(all.files = T)) {
+  opts_knit$set(root.dir = "../../")
+}
+```
+
+
+```{r init, include=FALSE,echo=FALSE}
+source("init.R")
+safeLibrary(rpart)
+safeLibrary(rattle)
+safeLibrary(h2o)
+safeLibrary(tidyverse)
+safeLibrary(broom)
+safeLibrary(ggthemes)
+safeLibrary(h2o)
+h2o.init()
+
+dataset = readRDS("data/clean/03_ready.rds")
+```
+
+# Inicial
+
+Descripcion del dataset
+
+```{r}
+aux = dataset %>% 
+  group_by(Male) %>% 
+  summarise(salario = mean(ConvertedSalary,na.rm=T),
+            number = n()) %>% 
+  filter(!is.na(Male))
+
+ggplot(aux,(aes(Male,salario))) + geom_bar(stat = 'identity', fill = 'dark orange') + ggtitle('Salario Promedio por Genero') + scale_fill_tableau() 
+```
+
+```{r}
+ggplot(filter(dataset,!is.na(Male)),aes(ConvertedSalary,group = Male, fill = Male)) + 
+  geom_density(alpha= 0.3,kernel = 'epanechnikov') + 
+  ggtitle('Distribucion de Sueldo por Genero')  + 
+  scale_fill_tableau() 
+```
+```{r}
+ggplot(filter(dataset,!is.na(Male)),aes(log10(ConvertedSalary),group = Male, fill = Male)) + 
+  geom_density(alpha= 0.3,kernel='epanechnikov') + 
+  ggtitle('Distribucion de Log Sueldo por Genero')  + 
+  scale_fill_tableau() 
+```
+
+```{r}
+t.test(ConvertedSalary ~ Male, filter(dataset,!is.na(Male)),alternative = 'less')
+```
+
+
+```{r}
+ggplot(aux,(aes(Male,number))) + geom_bar(stat = 'identity', fill = 'dark orange') + ggtitle('Tamaño de Muestra') + scale_fill_tableau() 
+```
+
+# Metodología
+me guiare por los modelos, en vez de buscar.
+
+# Descriptivos
+
+## Arbol
+
+### Salario
+```{r}
+fitTree = rpart(ConvertedSalary ~ .,dataset)
+fancyRpartPlot(fitTree)
+```
+
+* OperatingSystem,What is the primary operating system in which you work?
+* AssessBenefits2,"Now, imagine you are assessing a job's benefits package. Please rank the following aspects of a job's benefits package from most to least important to you (by dragging the choices up and down), where 1 is most important and 11 is least important. Stock options or shares"
+* YearsCodingProf,For how many years have you coded professionally (as a part of your work)?
+
+Notese que tambien está: YearsCoding,"Including any education, for how many years have you been coding?" y no entró al modelo
+
+```{r}
+aux = dataset %>% 
+  group_by(Male) %>% 
+  summarise(YearsCodingProf = mean(YearsCodingProf,na.rm=T),
+            AssessBenefits2 = mean(AssessBenefits2,na.rm=T),
+            number = n()) %>% 
+  filter(!is.na(Male))
+
+ggplot(aux,(aes(Male,YearsCodingProf))) + geom_bar(stat = 'identity', fill = 'dark orange') + ggtitle('Años Promedio Programando')
+```
+
+```{r}
+ggplot(aux,(aes(Male,AssessBenefits2))) + geom_bar(stat = 'identity', fill = 'dark orange') + ggtitle('Preferencia por Acciones de Empresa, Menor es Mayor Preferencia')
+```
+
+```{r}
+aux = dataset %>%
+  filter(!is.na(OperatingSystem) & !is.na(Male) ) %>% 
+  group_by(Male,OperatingSystem) %>% 
+  summarise(number = n()) %>% 
+  group_by(Male) %>% 
+  mutate(os_portion = number/sum(number))
+
+ggplot(aux,aes(Male,os_portion, fill = OperatingSystem)) + geom_bar(position = 'stack',stat = 'identity') +
+  ggtitle('Porcion de Sistema operativo por Genero') + scale_fill_tableau() 
+```
+
+
+### Genero
+
+```{r}
+fitTree = rpart(Male ~ .,dataset, cp = 0.008)
+fancyRpartPlot(fitTree) 
+```
+
+* YearsCodingProf,For how many years have you coded professionally (as a part of your work)?
+* AssessJob9,"Imagine that you are assessing a potential job opportunity. Please rank the following aspects of the job opportunity in order of importance (by dragging the choices up and down), where 1 is the most important and 10 is the least important. The diversity of the company or organization"
+* Hobby,Do you code as a hobby?
+
+## Random Forest, Iportancia Variables
+```{r}
+importance = readRDS('data/models/importance_salary.RDS')
+importance = head(importance,10)
+ggplot(importance,aes(variable,scaled_importance)) + 
+  geom_bar(stat = 'identity',fill='dark orange') + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+```{r}
+aux = dataset %>% 
+  group_by(Male) %>% 
+  summarise(YearsCoding = mean(YearsCoding,na.rm=T),
+            YearsCodingProf = mean(YearsCodingProf,na.rm=T),
+            Age = mean(Age,na.rm=T),
+            number = n()) %>% 
+  filter(!is.na(Male))
+ggplot(aux,aes(Male,Age)) + geom_bar(stat = 'identity',fill='dark orange') + ggtitle('Edad por Genero')
+```
+
+```{r}
+ggplot(aux,aes(Male,YearsCoding)) + geom_bar(stat = 'identity',fill='dark orange') + ggtitle('Años Programando por Genero')
+```
+ 
+```{r}
+aux = aux %>% 
+  select(-number,-Male) %>% 
+  summarize_all(diff) %>% 
+  gather(Variable,Difference)
+ggplot(aux,aes(Variable,Difference)) + geom_bar(stat='identity',fill='dark orange') +ggtitle('Diferencia entre años Hombre y Mujer')
+```
+
+```{r}
+aux = dataset %>% 
+  mutate(DevType_Engineering.manager = DevType_Engineering.manager==1) %>% 
+  group_by(DevType_Engineering.manager) %>% 
+  summarise(ConvertedSalary = mean(ConvertedSalary,na.rm = T))
+ggplot(aux,aes(DevType_Engineering.manager,ConvertedSalary)) + geom_bar(stat='identity',fill='dark orange') +ggtitle('Sueldo Promedio Engineering Manager vs Resto')
+```
+
+
+```{r}
+aux = dataset %>% 
+  group_by(Male,DevType_Engineering.manager) %>% 
+  summarise(number = n()) %>% 
+  group_by(Male) %>% 
+  mutate(portion = number/sum(number)) %>% 
+  filter(!is.na(Male) & DevType_Engineering.manager)
+ggplot(aux,aes(Male,portion)) + geom_bar(stat='identity',fill='dark orange') +ggtitle('Porcion de Engineering Manager por Genero')
+```
+
+```{r}
+fitTree = rpart(DevType_Engineering.manager ~ .,select(dataset,
+                                                       -ConvertedSalary,
+                                                       -DevType_Product.manager,
+                                                       -DevType_Csuite.executive.CEO.CTO.etc,
+                                                       -HopeFiveYears), cp = 0.008)
+fancyRpartPlot(fitTree) 
+```
+```{r}
+aux = dataset %>% 
+  group_by(Male) %>% 
+  summarise(PlatformWorkedWith_AWS = mean(PlatformWorkedWith_AWS,na.rm=T),
+            number = n()) %>% 
+  filter(!is.na(Male))
+ggplot(aux,aes(Male,PlatformWorkedWith_AWS)) + geom_bar(stat = 'identity',fill='dark orange') + ggtitle('Trabajo con AWS por Genero')
+```
+
+
+# Simulación
+```{r,echo=FALSE,include=FALSE}
+dataset = readRDS("data/clean/03_ready.rds")
+salary_fit = h2o.loadModel('data/models/salary')
+dataset = mutate_if(dataset,is.ordered,as.character)
+dataset.h2o = as.h2o(dataset)
+dataset = bind_cols(dataset, as.data.frame(predict(salary_fit,dataset.h2o)) )
+```
+
+```{r}
+dataset %>% 
+  mutate(scr = (ConvertedSalary-mean(ConvertedSalary))^2,
+         error = (ConvertedSalary-as.numeric(predict))^2) %>% 
+  summarize(1-sum(error)/sum(scr))
+```
+
+```{r}
+dataset %>% 
+  filter(!is.na(Male)) %>% 
+  group_by(Male) %>% 
+  mutate(scr = (ConvertedSalary-mean(ConvertedSalary))^2,
+         error = (ConvertedSalary-as.numeric(predict))^2) %>% 
+  summarize(1-sum(error)/sum(scr))
+```
+```{r,echo=FALSE,include=FALSE}
+dataset_op_sex = mutate(dataset,Male = !Male)
+dataset_op_sex.h2o = as.h2o(dataset_op_sex)
+dataset = bind_cols(dataset, as.data.frame(predict(salary_fit,dataset_op_sex.h2o)) )
+dataset = rename(dataset,
+                 estimado = predict,
+                 sexo_opuesto = predict1)
+```
+
+```{r}
+aux = dataset %>% 
+  filter(!is.na(Male)) %>% 
+  group_by(Male) %>% 
+  summarize(estimado = mean(as.numeric(estimado)),
+            sexo_opuesto = mean(as.numeric(sexo_opuesto))
+  ) 
+tidy_aux = aux %>% gather(escenario,sueldo_promedio,-Male)
+ggplot(tidy_aux,aes(Male,sueldo_promedio,fill= escenario)) + geom_bar(stat='identity', position='dodge') +ggtitle('Sueldo estimado vs Sueldo Estimado con genero Opuesto')
+```
+
+```{r}
+aux
+```
+

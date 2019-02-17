@@ -5,43 +5,6 @@ safeLibrary(h2o)
 
 dataset = readRDS("data/clean/03_ready.rds")
 
-aux = dataset %>% 
-  group_by(Male,YearsCodingProf, OperatingSystem) %>% 
-  summarise(salario = mean(ConvertedSalary,na.rm=T)) %>% 
-  filter(!is.na(Male)) %>% 
-  ungroup() %>% 
-  spread(Male,salario)
-
-
-
-
-
-# Arbol
-fitTree = rpart(ConvertedSalary ~ .,dataset)
-fancyRpartPlot(fitTree)
-
-# AssessBenefits2: acciones
-
-dataset %>% 
-  group_by(Male) %>% 
-  summarise(salario = mean(ConvertedSalary,na.rm=T),
-            YearsCodingProf = mean(YearsCodingProf,na.rm=T),
-            AssessBenefits2 = mean(AssessBenefits2,na.rm=T),
-            number = n())
-
-dataset %>%
-  filter(!is.na(OperatingSystem)) %>% 
-  group_by(Male,OperatingSystem) %>% 
-  summarise(number = n()) %>% 
-  group_by(Male) %>% 
-  mutate(gender_portion = number/sum(number))
-
-# AssessJob9 = Diversity
-# Hobby = code for fun
-fitTree = rpart(Male ~ .,dataset, cp = 0.008)
-fancyRpartPlot(fitTree)
-
-
 # Random Forest
 srv = h2o.init(nthreads = -1)
 h2o.aux = mutate_if(dataset,is.ordered,as.character)
@@ -71,7 +34,8 @@ lasso_salary = h2o.glm(y = "ConvertedSalary",
                       compute_p_values = TRUE,
                       link = 'identity')
 data.frame(h2o.varimp(lasso_salary))
-arrange(data.frame(lasso_salary@model$coefficients_table),p_value)
+p_value = arrange(data.frame(lasso_salary@model$coefficients_table),p_value)
+
 
 lasso_gender = h2o.glm(y = "Male",
                        x = setdiff(colnames(dataset),"Male"),
