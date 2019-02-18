@@ -12,6 +12,9 @@ if(!require("knitr")){
 if (!'.git' %in% dir(all.files = T)) {
   opts_knit$set(root.dir = "../../")
 }
+knitr::opts_chunk$set(
+  fig.path = "images/"
+)
 ```
 
 
@@ -195,7 +198,7 @@ ggplot(aux,aes(Male,PlatformWorkedWith_AWS)) + geom_bar(stat = 'identity',fill='
 # Simulación
 ```{r,echo=FALSE,include=FALSE}
 dataset = readRDS("data/clean/03_ready.rds")
-salary_fit = h2o.loadModel('data/models/salary')
+salary_fit = h2o.loadModel('./data/models/salary_balanced')
 dataset = mutate_if(dataset,is.ordered,as.character)
 dataset.h2o = as.h2o(dataset)
 dataset = bind_cols(dataset, as.data.frame(predict(salary_fit,dataset.h2o)) )
