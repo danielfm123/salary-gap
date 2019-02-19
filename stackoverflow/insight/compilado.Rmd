@@ -160,6 +160,36 @@ ggplot(aux,aes(Variable,Difference)) + geom_bar(stat='identity',fill='dark orang
 
 ```{r}
 aux = dataset %>% 
+  filter(!is.na(Male) & !is.na(Age) & Age > 20  & Age < 60) %>% 
+  group_by(Male,Age) %>% 
+  summarize(YearsCoding = mean(YearsCoding,na.rm = T))
+ggplot(aux,aes(Age,YearsCoding,group = Male, color = Male)) + geom_line(size=2) + ggtitle('Años de experiencia laboral vs Edad')
+```
+```{r}
+ggplot(filter(dataset,!is.na(Male)),aes(YearsCoding,group = Male, fill = Male)) + 
+  geom_density(alpha= 0.3) + 
+  ggtitle('Distribucion de Años de Experiencia por Genero')  + 
+  scale_fill_tableau() 
+```
+```{r}
+aux = dataset %>% 
+  filter(!is.na(Male) & !is.na(YearsCoding)) %>% 
+  group_by(Male,YearsCoding) %>% 
+  summarize(ConvertedSalary = mean(ConvertedSalary,na.rm = T),
+            q = n()) %>% 
+  filter(q >15)
+ggplot(aux,aes(YearsCoding,ConvertedSalary,group = Male, color = Male)) + geom_line(size=2) + ggtitle('Sueldo vs Años de experiencia Laboral')
+```
+
+
+```{r}
+aux = dataset[,c('Male','YearsCoding','ConvertedSalary')] %>% 
+  na.omit()
+summary(lm(ConvertedSalary ~ YearsCoding + Male,aux))
+```
+
+```{r}
+aux = dataset %>% 
   mutate(DevType_Engineering.manager = DevType_Engineering.manager==1) %>% 
   group_by(DevType_Engineering.manager) %>% 
   summarise(ConvertedSalary = mean(ConvertedSalary,na.rm = T))
