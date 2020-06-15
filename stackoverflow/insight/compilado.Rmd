@@ -7,10 +7,10 @@ output: html_document
 # Setip del notebook
 if(!require("knitr")){
   install.packages("knitr")
-  library(knitr)
 }
+library(knitr)
 if (!'.git' %in% dir(all.files = T)) {
-  opts_knit$set(root.dir = "../../")
+  opts_knit$set(root.dir = paste0(getwd(),"/../../"))
 }
 knitr::opts_chunk$set(
   fig.path = "images/"
@@ -19,6 +19,7 @@ knitr::opts_chunk$set(
 
 
 ```{r init, include=FALSE,echo=FALSE}
+print(getwd())
 source("init.R")
 safeLibrary(rpart)
 safeLibrary(rattle)
@@ -253,18 +254,17 @@ dataset %>%
 ```{r,echo=FALSE,include=FALSE}
 dataset_op_sex = mutate(dataset,Male = !Male)
 dataset_op_sex.h2o = as.h2o(dataset_op_sex)
-dataset = bind_cols(dataset, as.data.frame(predict(salary_fit,dataset_op_sex.h2o)) )
-dataset = rename(dataset,
-                 estimado = predict,
-                 sexo_opuesto = predict1)
+dataset = data.frame(dataset, 
+                     estimated_op = as.data.frame(predict(salary_fit,dataset_op_sex.h2o))[,1],
+                     estimated = as.data.frame(predict(salary_fit,dataset.h2o))[,1])
 ```
 
 ```{r}
 aux = dataset %>% 
   filter(!is.na(Male)) %>% 
   group_by(Male) %>% 
-  summarize(estimado = mean(as.numeric(estimado)),
-            sexo_opuesto = mean(as.numeric(sexo_opuesto))
+  summarize(estimated = mean(estimated),
+            estimated_op = mean(estimated_op)
   ) 
 tidy_aux = aux %>% gather(escenario,sueldo_promedio,-Male)
 ggplot(tidy_aux,aes(Male,sueldo_promedio,fill= escenario)) + geom_bar(stat='identity', position='dodge') +ggtitle('Sueldo estimado vs Sueldo Estimado con genero Opuesto')
