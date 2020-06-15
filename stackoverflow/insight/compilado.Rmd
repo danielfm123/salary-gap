@@ -229,7 +229,8 @@ ggplot(aux,aes(Male,PlatformWorkedWith_AWS)) + geom_bar(stat = 'identity',fill='
 ```{r,echo=FALSE,include=FALSE}
 dataset = readRDS("data/clean/03_ready.rds")
 salary_fit = h2o.loadModel('./data/models/salary_balanced')
-dataset = mutate_if(dataset,is.ordered,as.character)
+dataset = mutate_if(dataset,is.ordered,as.character) %>% 
+  mutate_if(is.character, as.factor)
 dataset.h2o = as.h2o(dataset)
 dataset = bind_cols(dataset, as.data.frame(predict(salary_fit,dataset.h2o)) )
 ```
@@ -271,5 +272,21 @@ ggplot(tidy_aux,aes(Male,sueldo_promedio,fill= escenario)) + geom_bar(stat='iden
 
 ```{r}
 aux
+```
+
+```{r}
+fit_exp = lm(ConvertedSalary ~ YearsCodingProf +YearsCoding, dataset)
+summary(fit_exp)
+```
+
+```{r}
+aux = dataset %>% 
+  filter(!is.na(Male)) %>% 
+  group_by(Male) %>% 
+  summarise(ConvertedSalary = mean(ConvertedSalary,na.rm = T), YearsCodingProf = mean(YearsCodingProf,na.rm = T), YearsCoding = mean(YearsCoding,na.rm = T))
+aux$Estimated = predict(fit_exp, aux)
+diferencia = aux[1,"ConvertedSalary"] - aux[2,"ConvertedSalary"]
+diferencia_mod = aux[1,"Estimated"] - aux[2,"ConvertedSalary"]
+diferencia_mod/diferencia
 ```
 

@@ -14,8 +14,7 @@ if(version$os == "mingw32"){
 librerias_a_cargar = c("tidyverse",
                        "future",
                        "compiler",
-                       "readr",
-                       'caret')
+                       "readr")
 for(lib in librerias_a_cargar){
   # print(lib)
   if(!lib %in% rownames(installed.packages())){
