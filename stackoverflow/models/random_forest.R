@@ -13,8 +13,8 @@ salary_fit = h2o.randomForest(y = "ConvertedSalary",
                               x = setdiff(colnames(dataset),"ConvertedSalary"),
                               training_frame = dataset.h2o,
                               model_id = "salary_balanced",
-                              ntrees = 1000)
-#MSE 24418.3
+                              ntrees = 100)
+#RMSE 24350.06
 h2o.saveModel(salary_fit,'data/models/',force = T)
 saveRDS(data.frame(h2o.varimp(salary_fit)),'data/models/importance_salary.RDS')
 
